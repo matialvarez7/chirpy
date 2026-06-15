@@ -27,3 +27,21 @@ content-type: application/json
   "body": "I hear Mastodon is better than Chirpy. sharbert I need to migrate",
   "extra": "this should be ignored"
 }
+
+###
+
+POST http://localhost:8080/api/users
+content-type: application/json
+
+{
+  "email": "matias@prueba.com"
+}
+
+###
+
+POST http://localhost:8080/api/users
+content-type: application/json
+
+{
+  "email": "astrid@prueba.com"
+}
