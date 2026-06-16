@@ -67,3 +67,13 @@ GET http://localhost:8080/api/chirps
 ###
 
 GET http://localhost:8080/api/chirps/51a47f07-73f1-4514-a01e-5cb13c2d069b
+
+###
+
+POST http://localhost:8080/api/login
+content-type: application/json
+
+{
+  "email": "astrid@prueba.com",
+  "password": "password"
+}
