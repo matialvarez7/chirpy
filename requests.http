@@ -45,3 +45,17 @@ content-type: application/json
 {
   "email": "astrid@prueba.com"
 }
+
+###
+
+POST http://localhost:8080/admin/reset
+
+###
+
+POST http://localhost:8080/api/chirps
+content-type: application/json
+
+{
+  "body": "My second chirp",
+  "user_id": "4aef11d1-7dee-40bc-8bbb-99cb9324b583"
+}
