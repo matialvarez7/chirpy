@@ -59,3 +59,11 @@ content-type: application/json
   "body": "My second chirp",
   "user_id": "4aef11d1-7dee-40bc-8bbb-99cb9324b583"
 }
+
+###
+
+GET http://localhost:8080/api/chirps
+
+###
+
+GET http://localhost:8080/api/chirps/51a47f07-73f1-4514-a01e-5cb13c2d069b
