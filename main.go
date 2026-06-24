@@ -16,6 +16,7 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
 	environment    string
+	secret         string
 }
 
 func main() {
@@ -26,6 +27,7 @@ func main() {
 	}
 
 	dbURL := os.Getenv("DB_URL")
+	mySecret := os.Getenv("SECRET")
 	env := os.Getenv("PLATFORM")
 
 	db, err := sql.Open("postgres", dbURL)
@@ -41,6 +43,7 @@ func main() {
 		fileserverHits: atomic.Int32{},
 		db:             dbQueries,
 		environment:    env,
+		secret:         mySecret,
 	}
 
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))

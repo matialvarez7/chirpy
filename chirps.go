@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/matialvarez7/chirpy/internal/auth"
 	"github.com/matialvarez7/chirpy/internal/database"
 )
 
@@ -21,8 +22,7 @@ type Chirp struct {
 }
 
 type chirpParams struct {
-	Body   string        `json:"body"`
-	UserId uuid.NullUUID `json:"user_id"`
+	Body string `json:"body"`
 }
 
 func (cfg *apiConfig) createChirp(w http.ResponseWriter, r *http.Request) {
@@ -35,6 +35,18 @@ func (cfg *apiConfig) createChirp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	userID, err := auth.ValidateJWT(token, cfg.secret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
 	if len(reqChirp.Body) >= 140 {
 		respondWithError(w, http.StatusBadRequest, "Chirp is too long")
 		return
@@ -43,8 +55,11 @@ func (cfg *apiConfig) createChirp(w http.ResponseWriter, r *http.Request) {
 	reqChirp.Body = cleanMessage(reqChirp.Body)
 
 	newChirp := database.CreateChirpParams{
-		Body:   reqChirp.Body,
-		UserID: reqChirp.UserId,
+		Body: reqChirp.Body,
+		UserID: uuid.NullUUID{
+			UUID:  userID,
+			Valid: true,
+		},
 	}
 
 	dbChirp, err := cfg.db.CreateChirp(r.Context(), newChirp)
