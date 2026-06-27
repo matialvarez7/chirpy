@@ -16,10 +16,21 @@ DELETE FROM users;
 SELECT * FROM users
 WHERE email = $1 LIMIT 1;
 
+-- name: GetUserById :one
+SELECT * FROM users
+WHERE id = $1 LIMIT 1;
+
 -- name: UpdateUser :one
 UPDATE users
     set email = $2,
     hashed_password = $3,
+    updated_at = NOW()
+WHERE id = $1
+RETURNING *;
+
+-- name: UpdateUserToChirpyRed :one
+UPDATE users
+    set is_chirpy_red = TRUE,
     updated_at = NOW()
 WHERE id = $1
 RETURNING *;
