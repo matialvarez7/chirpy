@@ -61,3 +61,54 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 
 	respondWithJSON(w, http.StatusCreated, user)
 }
+
+func (cfg *apiConfig) updateUserHandler(w http.ResponseWriter, r *http.Request) {
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	userId, err := auth.ValidateJWT(token, cfg.secret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+
+	userInf := userInfo{}
+
+	err = decoder.Decode(&userInf)
+	if err != nil {
+		log.Printf("Error decoding parameters: %s", err)
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	hashedPassword, err := auth.HashPassword(userInf.Password)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	params := database.UpdateUserParams{
+		ID:             userId,
+		Email:          userInf.Email,
+		HashedPassword: hashedPassword,
+	}
+	dbUpdatedUser, err := cfg.db.UpdateUser(r.Context(), params)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	user := User{
+		ID:        dbUpdatedUser.ID,
+		CreatedAt: dbUpdatedUser.CreatedAt,
+		UpdatedAt: dbUpdatedUser.UpdatedAt,
+		Email:     dbUpdatedUser.Email,
+	}
+
+	respondWithJSON(w, http.StatusOK, user)
+}
