@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -14,11 +15,11 @@ import (
 )
 
 type Chirp struct {
-	ID        uuid.UUID     `json:"id"`
-	CreatedAt time.Time     `json:"created_at"`
-	UpdatedAt time.Time     `json:"updated_at"`
-	Body      string        `json:"body"`
-	UserID    uuid.NullUUID `json:"user_id"`
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Body      string    `json:"body"`
+	UserID    uuid.UUID `json:"user_id"`
 }
 
 type chirpParams struct {
@@ -55,11 +56,8 @@ func (cfg *apiConfig) createChirp(w http.ResponseWriter, r *http.Request) {
 	reqChirp.Body = cleanMessage(reqChirp.Body)
 
 	newChirp := database.CreateChirpParams{
-		Body: reqChirp.Body,
-		UserID: uuid.NullUUID{
-			UUID:  userID,
-			Valid: true,
-		},
+		Body:   reqChirp.Body,
+		UserID: userID,
 	}
 
 	dbChirp, err := cfg.db.CreateChirp(r.Context(), newChirp)
@@ -81,13 +79,36 @@ func (cfg *apiConfig) createChirp(w http.ResponseWriter, r *http.Request) {
 
 func (cfg *apiConfig) listChirps(w http.ResponseWriter, r *http.Request) {
 
-	dbChirps, err := cfg.db.ListChirps(r.Context())
+	dbChirps := []database.Chirp{}
+	var err error
+
+	queryID := r.URL.Query().Get("author_id")
+	sortQuery := r.URL.Query().Get("sort")
+
+	if queryID != "" {
+		authorID, err := uuid.Parse(queryID)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		dbChirps, err = cfg.db.ListChirpsByAuthorID(r.Context(), authorID)
+	} else {
+		dbChirps, err = cfg.db.ListChirps(r.Context())
+	}
+
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	chirps := mapChirps(dbChirps)
+
+	if sortQuery != "" && sortQuery == "desc" {
+		sort.Slice(chirps, func(i, j int) bool {
+			return chirps[i].CreatedAt.After(chirps[j].CreatedAt)
+		})
+	}
 
 	respondWithJSON(w, http.StatusOK, chirps)
 }
@@ -140,7 +161,7 @@ func (cfg *apiConfig) deleteChirp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if chirp.UserID.UUID != userId {
+	if chirp.UserID != userId {
 		respondWithError(w, http.StatusForbidden, errors.New("Can't delete. You are not the owner of the chirp").Error())
 		return
 	}

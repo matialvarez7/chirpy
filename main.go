@@ -17,6 +17,7 @@ type apiConfig struct {
 	db             *database.Queries
 	environment    string
 	secret         string
+	apiKey         string
 }
 
 func main() {
@@ -28,6 +29,7 @@ func main() {
 
 	dbURL := os.Getenv("DB_URL")
 	mySecret := os.Getenv("SECRET")
+	polkaApikey := os.Getenv("POLKA_KEY")
 	env := os.Getenv("PLATFORM")
 
 	db, err := sql.Open("postgres", dbURL)
@@ -44,6 +46,7 @@ func main() {
 		db:             dbQueries,
 		environment:    env,
 		secret:         mySecret,
+		apiKey:         polkaApikey,
 	}
 
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
